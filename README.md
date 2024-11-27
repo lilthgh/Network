@@ -29,5 +29,5 @@ Using Python, JavaScript, HTML, and CSS, complete the implementation of a social
     - Using JavaScript, you should asynchronously let the server know to update the like count (as via a call to fetch) and then update the post’s like count displayed on the page, without requiring a reload of the entire page.
 
   
-:computer: &nbsp; **Youtube video: [here]https://cs50.harvard.edu/web/2020/projects/4/network/**
+ &nbsp; **Youtube video: [here]https://cs50.harvard.edu/web/2020/projects/4/network/**
 :computer: &nbsp; **more information [here]https://cs50.harvard.edu/web/2020/projects/4/network/**
