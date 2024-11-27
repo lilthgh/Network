@@ -1,0 +1,167 @@
+{% extends "network/layout.html" %}  
+{% block body %}  
+<script type="application/json" id="liked_post">{{ liked_post|safe }}</script>  
+  
+  
+
+<script>  
+    const likedPost = JSON.parse(document.getElementById('liked_post').textContent); // Extract and parse the liked posts  
+
+    function getCookie(name) {  
+        let cookieValue = null;  
+        if (document.cookie && document.cookie !== '') {  
+            const cookies = document.cookie.split(';');  
+            for (let cookie of cookies) {  
+                cookie = cookie.trim();  
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {  
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));  
+                    break;  
+                }  
+            }  
+        }  
+        return cookieValue;  
+    }  
+    function submitHandler(id){  
+    const textareaValue = document.getElementById(`textarea_${id}`).value;  
+    const content = document.getElementById(`post_content_${id}`); // Corrected to match the ID in the HTML  
+    const modal = document.getElementById(`modal_edit_post_${id}`);  
+    fetch(`/edit/${id}`, {  
+        method: "POST",  
+        headers: {"Content-type": "application/json", "X-CSRFToken": getCookie("csrftoken")},  
+        body: JSON.stringify({  
+            content: textareaValue  
+        })  
+    })  
+    .then(response => response.json())  
+    .then(result => {  
+        content.innerHTML = result.data; // This should work now  
+        
+        modal.classList.remove('show');  
+        modal.setAttribute('aria-hidden', 'true');  
+        modal.setAttribute('style', 'display: none');  
+
+        // get modal backdrops  
+        const modalsBackdrops = document.getElementsByClassName('modal-backdrop');  
+    
+        for(let i=0; i<modalsBackdrops.length; i++){  
+            document.body.removeChild(modalsBackdrops[i]);  
+        }  
+    })  
+}
+    function likeHandler(id) {  
+        const btn = document.getElementById(`${id}`);  
+        const isLiked = likedPost.indexOf(Number(id)) >= 0;  // Check if the post is liked  
+
+        const csrfToken = getCookie('csrftoken'); // Get CSRF token  
+
+        fetch(isLiked ? `/remove_like/${id}` : `/add_like/${id}`, {  
+            method: 'POST',  
+            headers: {  
+                'Content-Type': 'application/json',  
+                'X-CSRFToken': csrfToken  
+            }  
+        })  
+        .then(response => response.json())  
+        .then(result => {  
+            if (result.message) {  
+                btn.classList.toggle('liked', !isLiked);  
+                btn.style.color = isLiked ? 'white' : 'red'; // Toggle color  
+                
+                // Update likedPost array  
+                if (isLiked) {  
+                    likedPost.splice(likedPost.indexOf(Number(id)), 1); // Remove post ID from likedPost array  
+                } else {  
+                    likedPost.push(Number(id)); // Add post ID to likedPost array  
+                }  
+            }  
+        })  
+        .catch(error => {  
+            console.error('There was a problem with the fetch operation:', error);  
+        });  
+    }  
+</script>
+  
+
+<h1>All Posts</h1>  
+
+{% if user.is_authenticated %}  
+    <div class="container mt-4">  
+        <h3>New Post</h3>  
+        <form action="{% url 'new_post' %}" method="post">  
+           {% csrf_token %}  
+           <textarea name="content" rows="4" class="form-control" placeholder="What's on your mind?"></textarea>  
+           <br/>  
+           <input type="submit" value="Post" class="btn btn-primary">  
+        </form>  
+    </div>  
+{% endif %}  
+
+<div class="container mt-4">  
+    <h3>All Posts</h3>  
+    <div class="all-posts">  
+        {% for post in page_post %}  
+            <div class="card mb-4">  
+                <div class="card-body">  
+                    <h5 class="username"><a href="{% url 'profile' user_id=post.user.id %}">{{ post.user }}</a></h5>  
+                    <h6 class="card-subtitle mb-2 text-body-secondary" id="post_content_{{ post.id }}">{{ post.content }}</h6>  
+                    <p class="card-text">{{ post.date }}</p>  
+
+                    {% if user.is_authenticated %}  
+                        {% if user == post.user %}  
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal_edit{{ post.id }}">  
+                                Edit  
+                            </button>  
+                            <!-- Modal -->  
+                            <div class="modal fade" id="modal_edit{{ post.id }}" tabindex="-1" aria-labelledby="modal_edit{{ post.id }}" aria-hidden="true">  
+                                <div class="modal-dialog">  
+                                    <div class="modal-content">  
+                                        <div class="modal-header">  
+                                            <h1 class="modal-title fs-5" id="exampleModalLabel">Edit Post</h1>  
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>  
+                                        </div>  
+                                        <div class="modal-body">  
+                                            <textarea rows="10" id="textarea_{{post.id}}" class="form-control" name="content">{{post.content}}</textarea>  
+                                        </div>  
+                                        <div class="modal-footer">  
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>  
+                                            <button type="button" class="btn btn-primary" onclick="submitHandler('{{ post.id }}')">Save Edit</button>  
+                                        </div>  
+                                    </div>  
+                                </div>  
+                            </div>  
+                        {% else %}  
+                            <!-- Like Button -->  
+                            {% if post.id in liked_post %}  
+                                <button type="button"  
+                                        class="fa fa-heart"  
+                                        style="font-size:24px;color:red;"  
+                                        onclick="likeHandler('{{ post.id }}')"  
+                                        id="{{ post.id }}">  
+                                </button>  
+                            {% else %}  
+                                <button type="button"  
+                                        class="fa fa-heart"  
+                                        style="font-size:24px;color:white;"  
+                                        onclick="likeHandler('{{ post.id }}')"  
+                                        id="{{ post.id }}">  
+                                </button>  
+                            {% endif %}  
+                        {% endif %}  
+                    {% endif %}  
+                </div>  
+            </div>  
+        {% endfor %}  
+    </div>  
+</div>  
+
+<nav aria-label="Page navigation example">  
+  <ul class="pagination">  
+    {% if page_post.has_previous %}  
+       <li class="page-item"><a class="page-link" href="?page={{page_post.previous_page_number}}">Previous</a></li>  
+    {% endif %}  
+    {% if page_post.has_next %}  
+      <li class="page-item"><a class="page-link" href="?page={{page_post.next_page_number}}">Next</a></li>  
+    {% endif %}  
+  </ul>  
+</nav>  
+{% endblock %}

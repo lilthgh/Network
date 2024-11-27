@@ -1,0 +1,49 @@
+{% extends "network/layout.html" %}  
+
+{% block title %}{{ username }}'s Profile{% endblock %}  
+
+{% block body %}   
+<div class="card text-center">  
+    <div class="card-body">  
+        <h5 class="card-title">{{ username }}</h5>  
+        <p class="card-text">Followers: {{ followers }}</p>  
+        <p class="card-text">Following: {{ following }}</p>  
+        {% if user.is_authenticated %}  
+            {% if user != user_owner %}  
+               {% if  isfollowing %}  
+                  <form action="{% url 'unfollow' %}" method="post">  
+                      {% csrf_token %}  
+                      <input type="hidden" name="userfollow" value="{{ user_owner.id }}" />  
+                      <input type="submit" value="Unfollow" class="btn btn-danger"/>  
+                   </form>  
+                {% else %}  
+                    <form action="{% url 'follow' %}" method="post">  
+                       {% csrf_token %}  
+                       <input type="hidden" name="userfollow" value="{{ user_owner.id }}" />  
+                       <input type="submit" value="Follow" class="btn btn-success" />  
+                    </form>  
+                {% endif %}  
+            {% endif %}  
+        {% endif %}  
+    </div>  
+</div>  
+
+<h4>Posts:</h4>  
+<div class="all-posts">  
+    {% if page_post %}  
+        {% for post in page_post %}  
+            <div class="card mb-4">  
+                <div class="card-body">  
+                    <h5 class="username"><a href="{% url 'profile' user_id=post.user.id %}">{{ post.user }}</a></h5>  
+                    <p class="card-text">{{ post.content }}</p>  
+                    <p class="card-text">  
+                        <small class="text-muted">{{ post.date }}</small>  
+                    </p>  
+                </div>  
+            </div>  
+        {% endfor %}  
+    {% else %}  
+        <p>No posts available.</p>  
+    {% endif %}  
+</div>  
+{% endblock %}
